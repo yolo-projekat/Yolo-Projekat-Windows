@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "yolo venicle (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "yolo venicle (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
