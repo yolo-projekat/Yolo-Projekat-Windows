@@ -1,4 +1,4 @@
-# 🖥️ YOLO Vozilo - Windows Control Center
+# 🖥️ YOLO projekat Windows
 
 [![Framework](https://img.shields.io/badge/Framework-WinUI_3-blue.svg)](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
 [![AI](https://img.shields.io/badge/AI-ONNX_Runtime-orange.svg)](https://onnxruntime.ai/)
