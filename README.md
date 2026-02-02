@@ -73,5 +73,6 @@ Dizajnirana u modernom Windows stilu sa fokusom na preglednost:
 
 ---
 
-Autor: Danilo Stoletovic 
+Autor: Danilo Stoletovic
+
 Licenca: MIT
