@@ -1,82 +1,73 @@
-YOLO Vozilo Control App 🚗🤖
+YOLO Vozilo - Windows Control Center 🖥️🏎️
 
-YOLO Vozilo je moderna Android aplikacija razvijena u Kotlinu (Jetpack Compose) koja služi kao kontrolni centar za pametno vozilo bazirano na mikrokontrolerima (poput ESP32 ili Raspberry Pi). Aplikacija kombinuje daljinsko upravljanje u realnom vremenu sa naprednim AI funkcijama poput prepoznavanja objekata i teksta.
+YOLO Vozilo Windows je desktop klijent razvijen u C# jeziku koristeći WinUI 3 (Windows App SDK). Aplikacija služi kao centralni komandni panel za upravljanje robotskim vozilom u realnom vremenu, kombinujući naprednu telemetriju, video striming niske latencije i moćne AI engine-ove.
 
 ✨ Ključne Karakteristike
-Live Stream Monitoring: Prikaz video signala sa kamere vozila u realnom vremenu preko HTTP protokola.
+High-Speed Video Feed: Kontinuirano osvežavanje video signala sa vozila uz vizuelni "Offline Overlay" kada kamera nije aktivna.
 
-AI Prepoznavanje Objekata (YOLO-style): Implementacija Google ML Kit Object Detection za identifikaciju i praćenje objekata na ekranu.
+Neural AI Integration:
 
-Smart Follow Mode: Automatsko praćenje detektovanog objekta (vozilo se okreće i kreće ka objektu).
+YOLOv8 Support: Integracija sa Microsoft.ML.OnnxRuntime za analizu okruženja u realnom vremenu.
 
-OCR & Auto-Pilot: Prepoznavanje pisanih komandi ("napred", "levo", "back", itd.) direktno sa slike i automatsko izvršavanje istih.
+Tesseract OCR: Prepoznavanje teksta na video feedu pomoću TesseractEngine, omogućavajući vizuelno očitavanje znakova ili komandi.
 
-Dual Control System:
+Precision Keyboard Control: Optimizovano upravljanje putem tastature (WASD sistem) sa logikom koja sprečava zagušenje komandi (Key Debouncing).
 
-Compact D-Pad: Klasične strelice za precizno kretanje.
+System Telemetry Log: Ugrađeni log sistem koji prati svaku komandu, status AI skeniranja i zdravlje mrežne konekcije.
 
-Circular Joystick: Intuitivni džojstik za fluidno upravljanje.
+Smart Reconnect: Automatski sistem za ponovno uspostavljanje veze sa vozilom (WebSocket) u intervalima od 3 sekunde.
 
-Snimanje i Slikanje:
+Image Processing: Korišćenje OpenCvSharp biblioteke za obradu slike pre slanja na OCR motor (konverzija u sivi ton, filtriranje).
 
-Čuvanje fotografija direktno u galeriju telefona.
+🛠 Tehnologije i Biblioteke
+UI Framework: WinUI 3 (Windows App SDK)
 
-Nativno MP4 snimanje: Konvertovanje niza frejmova u video fajl direktno na uređaju.
+AI Inference: ONNX Runtime (za YOLOv8 model)
 
-WebSocket Komunikacija: Brz prenos komandi bez latencije.
+OCR Engine: Tesseract.NET
 
-🛠 Tehnologije
-UI: Jetpack Compose (Moderni deklarativni UI)
+Computer Vision: OpenCvSharp 4
 
-AI/ML: Google ML Kit (Object Detection & Text Recognition)
+Networking: System.Net.WebSockets za komande i HttpClient za preuzimanje frejmova.
 
-Networking: OkHttp (WebSockets)
+Window Management: WinUIEx (za lako centriranje i promenu veličine prozora).
 
-Image Loading: Coil (Efikasno učitavanje frejmova)
+🚀 Rad sa aplikacijom
+1. Povezivanje i IP Konfiguracija
+Aplikacija podrazumevano traži vozilo na sledećim adresama:
 
-Video Processing: MediaCodec & MediaMuxer
+WebSocket (Komande): ws://192.168.4.1:1606
 
-🚀 Kako radi?
-1. Povezivanje
-Aplikacija pokušava da se poveže na vozilo putem dve adrese:
+HTTP (Kamera): http://192.168.4.1:1607/capture
 
-WebSocket: ws://192.168.4.1:1606 (za slanje komandi kretanja).
+2. Prečice na tastaturi
+WASD: Kontrola kretanja (Napred, Levo, Nazad, Desno).
 
-HTTP Stream: http://192.168.4.1:1607/capture (za preuzimanje frejmova kamere).
+TAB: Brzo paljenje/gašenje video strima.
 
-2. Komande kretanja
-Vozilo prima sledeće string komande preko WebSocketa:
+Taster pušten: Automatsko slanje stop komande vozilu.
 
-napred, nazad, levo, desno
+3. AI Analiza
+Klikom na BtnYolo ili BtnOcr, aplikacija pokreće asinhroni zadatak koji analizira trenutni frejm. Rezultati se odmah ispisuju u sistemski log sa vremenskim pečatom.
 
-rot_levo, rot_desno
+📦 Instalacija i Setup
+Modeli: Postavite vaš yolov8n.onnx fajl u korenski direktorijum aplikacije.
 
-stop (šalje se čim korisnik pusti dugme)
+Tessdata: Uverite se da folder ./tessdata sadrži eng.traineddata (ili drugi jezik) za OCR.
 
-3. AI Logika
-Follow Mode: Aplikacija analizira boundingBox detektovanog objekta. Ako je objekat na levoj strani frejma, šalje se komanda levo, ako je u centru napred, a ako je desno desno.
+Mreža: Povežite računar na Wi-Fi mrežu vozila (ESP32/Raspberry Pi pristupna tačka).
 
-OCR Auto-Pilot: Ako je aktiviran, aplikacija skenira tekst. Na primer, ako vidi reč "Left", automatski šalje komandu za skretanje ulevo.
+Runtime: Za pokretanje je potreban Windows App SDK Runtime.
 
-📦 Instalacija i Podešavanje
-Klonirajte ovaj repozitorijum.
+🎨 Korisnički Interfejs (UI)
+Dizajnirana je u Light Mode stilu sa fokusom na preglednost:
 
-Otvorite projekat u Android Studiju (Koala ili noviji).
+🟢 Connected: Plavi indikator i "CONNECTED" status.
 
-Dodajte neophodne dozvole u AndroidManifest.xml (Internet, Kamera, Storage).
+🔴 Offline: Crveni indikator i zamućen video ekran.
 
-Povežite svoj telefon na Wi-Fi pristupnu tačku vozila (default IP: 192.168.4.1).
+⌨️ Log: Skrolujući panel sa desne strane za praćenje akcija.
 
-Pokrenite aplikaciju.
+Autor: Danilo Stoletovic
 
-🎨 Teme i UI
-Aplikacija koristi čistu, modernu paletu boja:
-
-🔵 ThemeBlue (#3498DB): Primarna boja kontrola.
-
-🟢 ThemeSuccess (#2ECC71): Indikator aktivnog AI moda.
-
-🔴 ThemeAlert (#E74C3C): Indikator snimanja i diskonekcije.
-
-📝 Planirani razvoj (Roadmap)
-Autor: [Tvoje Ime/Username]
+Licenca: MIT
