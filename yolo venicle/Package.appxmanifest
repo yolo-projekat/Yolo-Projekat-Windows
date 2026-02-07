@@ -9,14 +9,14 @@
 
   <Identity
     Name="f87e2ed3-9148-4d24-9563-f94760faded6"
-    Publisher="CN=danil"
+    Publisher="CN=yolo-projekat"
     Version="1.0.0.0" />
 
   <mp:PhoneIdentity PhoneProductId="f87e2ed3-9148-4d24-9563-f94760faded6" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>yolo venicle</DisplayName>
-    <PublisherDisplayName>danil</PublisherDisplayName>
+    <PublisherDisplayName>yolo-projekat</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
