@@ -13,19 +13,17 @@ jobs:
       contents: write
 
     env:
-      # We will use these as literal strings in the steps below
       Configuration: Release
       Platform: x64
+      # Matching your exact filename from the error log
+      Solution_Path: "yolo venicle.slnx"
+      Project_Path: "yolo venicle/yolo venicle.csproj"
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
-    # Debug step: This helps you see if the file "yolo venicle.sln" is actually there
-    - name: List files for debugging
-      run: dir
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -53,13 +51,13 @@ jobs:
     - name: Restore NuGet Packages
       shell: powershell
       run: |
-        # Using literal strings with & call operator is the most robust way for spaces
-        & msbuild "yolo venicle.sln" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
+        # Use & and quotes to handle the .slnx extension and the space
+        & msbuild "$env:Solution_Path" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
 
     - name: Build and Package
       shell: powershell
       run: |
-        & msbuild "yolo venicle/yolo venicle.csproj" `
+        & msbuild "$env:Project_Path" `
           /p:Configuration=$env:Configuration `
           /p:Platform=$env:Platform `
           /p:UapAppxPackageBuildMode=SideloadOnly `
