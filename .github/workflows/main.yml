@@ -1,14 +1,19 @@
 name: Build, Sign, and Release WinUI 3
 
 on:
+  # 1. Allows you to click a "Run workflow" button in the GitHub Actions tab
+  workflow_dispatch:
+
+  # 2. Only triggers automatically if you push a tag (e.g., git push origin v1.0.0)
   push:
-    branches: [ "master" ] # Trigger on push to master
+    tags:
+      - 'v*' 
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: write # Required to create releases and tags
+      contents: write
 
     env:
       Solution_Path: "yolo venicle.sln"
@@ -20,12 +25,20 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # Necessary for automatic versioning tools
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
+    - name: Cache NuGet Packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.nuget/packages
+        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.config') }}
+        restore-keys: |
+          ${{ runner.os }}-nuget-
 
     - name: Setup MSBuild
       uses: microsoft/setup-msbuild@v2
@@ -37,11 +50,15 @@ jobs:
         $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
         [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
 
-    - name: Restore and Build
+    - name: Restore NuGet Packages
       shell: powershell
       run: |
-        msbuild $env:Solution_Path /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
-        msbuild $env:Project_Path `
+        msbuild "$env:Solution_Path" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
+
+    - name: Build and Package
+      shell: powershell
+      run: |
+        msbuild "$env:Project_Path" `
           /p:Configuration=$env:Configuration `
           /p:Platform=$env:Platform `
           /p:UapAppxPackageBuildMode=SideloadOnly `
@@ -50,8 +67,8 @@ jobs:
           /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
           /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
-    # This step creates a version tag like v1.0.5 based on your commit history
-    - name: Generate Release Tag
+    # Logic: Use the pushed tag if available, otherwise generate a new one
+    - name: Generate or Use Tag
       id: tag_gen
       uses: anothrNick/github-tag-action@1.67.0
       env:
@@ -66,7 +83,6 @@ jobs:
         name: Release ${{ steps.tag_gen.outputs.new_tag }}
         draft: false
         prerelease: false
-        # This finds the .msix file wherever it was built in the folder tree
         files: |
           **/AppPackages/**/*.msix
       env:
