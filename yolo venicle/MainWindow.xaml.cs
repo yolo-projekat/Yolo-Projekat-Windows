@@ -182,7 +182,10 @@ namespace yolo_venicle
             if (e.Key == VirtualKey.Tab) { e.Handled = true; ToggleVideo(!_isCamOn); return; }
             string key = e.Key.ToString().ToUpper();
             if (_activeKey == key) return;
-            string cmd = key switch { "W" => "napred", "A" => "levo", "S" => "nazad", "D" => "desno", _ => "" };
+            string cmd = key switch { "W" => "napred", "A" => "levo", "S" => "nazad", "D" => "desno",
+                "Q" => "levo_rot",
+                "E" => "desno_rot",
+                _ => "" };
             if (cmd != "") { _activeKey = key; SendCommand(cmd); }
         }
 
