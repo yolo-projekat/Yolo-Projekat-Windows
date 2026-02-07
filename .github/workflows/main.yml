@@ -77,9 +77,8 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        # Updated to ensure globbing finds the files even with spaces in folder names
+        # REMOVED QUOTES: This allows the glob pattern to work correctly
         files: |
-          "**/AppPackages/**/*.msix"
-          "**/Microsoft.WindowsAppRuntime.1.8.msix"
+          **/*.msix
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
