@@ -15,7 +15,6 @@ jobs:
     env:
       Configuration: Release
       Platform: x64
-      # Matching your exact filename from the error log
       Solution_Path: "yolo venicle.slnx"
       Project_Path: "yolo venicle/yolo venicle.csproj"
 
@@ -51,15 +50,20 @@ jobs:
     - name: Restore NuGet Packages
       shell: powershell
       run: |
-        # Use & and quotes to handle the .slnx extension and the space
-        & msbuild "$env:Solution_Path" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
+        # Added PublishReadyToRun=false to prevent the NETSDK1094 error
+        & msbuild "$env:Solution_Path" /t:Restore `
+          /p:Configuration=$env:Configuration `
+          /p:RuntimeIdentifier=win-$env:Platform `
+          /p:PublishReadyToRun=false
 
     - name: Build and Package
       shell: powershell
       run: |
+        # Added /p:PublishReadyToRun=false here as well for consistency
         & msbuild "$env:Project_Path" `
           /p:Configuration=$env:Configuration `
           /p:Platform=$env:Platform `
+          /p:PublishReadyToRun=false `
           /p:UapAppxPackageBuildMode=SideloadOnly `
           /p:GenerateAppxPackageOnBuild=true `
           /p:AppxPackageSigningEnabled=true `
