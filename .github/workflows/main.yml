@@ -47,6 +47,12 @@ jobs:
         $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
         [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
 
+    # NEW: Clean step to prevent old artifacts from interfering
+    - name: Clean Build Folders
+      shell: powershell
+      run: |
+        & msbuild "$env:Solution_Path" /t:Clean /p:Configuration=$env:Configuration /p:Platform=$env:Platform
+
     - name: Restore NuGet Packages
       shell: powershell
       run: |
@@ -77,8 +83,8 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        # REMOVED QUOTES: This allows the glob pattern to work correctly
+        # FIX: Targeted path avoids duplicate system files found in /obj or /bin
         files: |
-          **/*.msix
+          yolo venicle/AppPackages/**/*.msix
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
