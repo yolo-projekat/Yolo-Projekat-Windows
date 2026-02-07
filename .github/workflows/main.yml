@@ -1,10 +1,7 @@
 name: Build, Sign, and Release WinUI 3
 
 on:
-  # 1. Allows you to click a "Run workflow" button in the GitHub Actions tab
   workflow_dispatch:
-
-  # 2. Only triggers automatically if you push a tag (e.g., git push origin v1.0.0)
   push:
     tags:
       - 'v*' 
@@ -16,8 +13,7 @@ jobs:
       contents: write
 
     env:
-      Solution_Path: "yolo venicle.sln"
-      Project_Path: "yolo venicle/yolo venicle.csproj"
+      # We will use these as literal strings in the steps below
       Configuration: Release
       Platform: x64
 
@@ -26,6 +22,10 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
+    # Debug step: This helps you see if the file "yolo venicle.sln" is actually there
+    - name: List files for debugging
+      run: dir
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -53,12 +53,13 @@ jobs:
     - name: Restore NuGet Packages
       shell: powershell
       run: |
-        msbuild "$env:Solution_Path" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
+        # Using literal strings with & call operator is the most robust way for spaces
+        & msbuild "yolo venicle.sln" /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
 
     - name: Build and Package
       shell: powershell
       run: |
-        msbuild "$env:Project_Path" `
+        & msbuild "yolo venicle/yolo venicle.csproj" `
           /p:Configuration=$env:Configuration `
           /p:Platform=$env:Platform `
           /p:UapAppxPackageBuildMode=SideloadOnly `
@@ -67,7 +68,6 @@ jobs:
           /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
           /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
-    # Logic: Use the pushed tag if available, otherwise generate a new one
     - name: Generate or Use Tag
       id: tag_gen
       uses: anothrNick/github-tag-action@1.67.0
