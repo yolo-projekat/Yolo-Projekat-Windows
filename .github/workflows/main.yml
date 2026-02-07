@@ -47,7 +47,6 @@ jobs:
         $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
         [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
 
-    # NEW: Clean step to prevent old artifacts from interfering
     - name: Clean Build Folders
       shell: powershell
       run: |
@@ -74,6 +73,28 @@ jobs:
           /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
           /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
+    - name: Prepare Release Assets
+      shell: powershell
+      run: |
+        $tag = "${{ github.ref_name }}"
+        # Create a clean staging directory
+        if (Test-Path "release_assets") { Remove-Item -Recurse -Force "release_assets" }
+        New-Item -ItemType Directory -Path "release_assets"
+        
+        # 1. Find the main MSIX and rename it with the version tag
+        $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "yolo venicle*.msix" -Recurse | Select-Object -First 1
+        if ($mainPackage) {
+            Copy-Item $mainPackage.FullName "release_assets/yolo-venicle-$tag.msix"
+            Write-Host "Prepared main package: yolo-venicle-$tag.msix"
+        }
+        
+        # 2. Find the runtime dependency (taking only the FIRST one found to avoid duplicates)
+        $runtime = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "Microsoft.WindowsAppRuntime.1.8.msix" -Recurse | Select-Object -First 1
+        if ($runtime) {
+            Copy-Item $runtime.FullName "release_assets/Microsoft.WindowsAppRuntime.1.8.msix"
+            Write-Host "Prepared runtime dependency."
+        }
+
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
@@ -83,8 +104,8 @@ jobs:
         draft: false
         prerelease: false
         generate_release_notes: true
-        # FIX: Targeted path avoids duplicate system files found in /obj or /bin
-        files: |
-          yolo venicle/AppPackages/**/*.msix
+        files: release_assets/*
+        # NEW: If you re-run a build for the same tag, this prevents the "Already Exists" error
+        make_latest: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
