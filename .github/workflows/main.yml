@@ -1,0 +1,73 @@
+name: Build, Sign, and Release WinUI 3
+
+on:
+  push:
+    branches: [ "master" ] # Trigger on push to master
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write # Required to create releases and tags
+
+    env:
+      Solution_Path: "yolo venicle.sln"
+      Project_Path: "yolo venicle/yolo venicle.csproj"
+      Configuration: Release
+      Platform: x64
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Necessary for automatic versioning tools
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Decode Certificate
+      shell: powershell
+      run: |
+        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_Pfx }}")
+        $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
+        [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
+
+    - name: Restore and Build
+      shell: powershell
+      run: |
+        msbuild $env:Solution_Path /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=win-$env:Platform
+        msbuild $env:Project_Path `
+          /p:Configuration=$env:Configuration `
+          /p:Platform=$env:Platform `
+          /p:UapAppxPackageBuildMode=SideloadOnly `
+          /p:GenerateAppxPackageOnBuild=true `
+          /p:AppxPackageSigningEnabled=true `
+          /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
+          /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
+
+    # This step creates a version tag like v1.0.5 based on your commit history
+    - name: Generate Release Tag
+      id: tag_gen
+      uses: anothrNick/github-tag-action@1.67.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        WITH_V: true
+        DEFAULT_BUMP: patch
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.tag_gen.outputs.new_tag }}
+        name: Release ${{ steps.tag_gen.outputs.new_tag }}
+        draft: false
+        prerelease: false
+        # This finds the .msix file wherever it was built in the folder tree
+        files: |
+          **/AppPackages/**/*.msix
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
