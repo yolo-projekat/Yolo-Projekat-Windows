@@ -15,7 +15,6 @@ jobs:
     env:
       Configuration: Release
       Platform: x64
-      # Using the .slnx extension seen in your repository screenshot
       Solution_Path: "yolo venicle.slnx"
       Project_Path: "yolo venicle/yolo venicle.csproj"
 
@@ -51,7 +50,6 @@ jobs:
     - name: Restore NuGet Packages
       shell: powershell
       run: |
-        # Explicitly disabling ReadyToRun during restore to avoid NETSDK1094
         & msbuild "$env:Solution_Path" /t:Restore `
           /p:Configuration=$env:Configuration `
           /p:RuntimeIdentifier=win-$env:Platform `
@@ -60,7 +58,6 @@ jobs:
     - name: Build and Package
       shell: powershell
       run: |
-        # Using the & operator and quotes to safely handle the space in "yolo venicle"
         & msbuild "$env:Project_Path" `
           /p:Configuration=$env:Configuration `
           /p:Platform=$env:Platform `
@@ -75,13 +72,14 @@ jobs:
       uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        # Uses the tag name you pushed (e.g., v1.0.1)
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
         generate_release_notes: true
+        # Updated to ensure globbing finds the files even with spaces in folder names
         files: |
-          **/AppPackages/**/*.msix
+          "**/AppPackages/**/*.msix"
+          "**/Microsoft.WindowsAppRuntime.1.8.msix"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
