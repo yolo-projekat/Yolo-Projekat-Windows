@@ -5,7 +5,7 @@
     xmlns:winex="using:WinUIEx"
     Title="YOLO AI Command Center">
 
-    <Grid x:Name="RootGrid" Background="#F5F5F7">
+    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="350" />
@@ -17,22 +17,35 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Border CornerRadius="20" Background="#EBEBEB" BorderBrush="#D2D2D7" BorderThickness="1">
+            <Border CornerRadius="20" 
+                    Background="{ThemeResource LayerFillColorDefaultBrush}" 
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                    BorderThickness="1">
                 <Grid x:Name="Viewport">
                     <Image x:Name="VehicleFeedImage" Stretch="UniformToFill" Opacity="0" />
 
-                    <Grid x:Name="OfflineOverlay" Background="#FBFBFB" CornerRadius="20">
+                    <Grid x:Name="OfflineOverlay" 
+                          Background="{ThemeResource SolidBackgroundFillColorBaseBrush}" 
+                          CornerRadius="20">
                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                            <FontIcon Glyph="&#xE93E;" FontSize="48" Foreground="#D2D2D7" />
-                            <TextBlock Text="SYSTEM STANDBY" Margin="0,10,0,0" Foreground="#86868B" FontWeight="Bold" CharacterSpacing="200"/>
+                            <FontIcon Glyph="&#xE93E;" FontSize="48" 
+                                      Foreground="{ThemeResource TextFillColorDisabledBrush}" />
+                            <TextBlock Text="SYSTEM STANDBY" Margin="0,10,0,0" 
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                                       FontWeight="Bold" CharacterSpacing="200"/>
                         </StackPanel>
                     </Grid>
 
                     <Border VerticalAlignment="Top" HorizontalAlignment="Left" Margin="20" 
-                            Background="#AAFFFFFF" CornerRadius="8" Padding="12,6" BorderBrush="#22000000" BorderThickness="1">
+                            Background="{ThemeResource SystemControlBackgroundChromeMediumLowBrush}" 
+                            CornerRadius="8" Padding="12,6" 
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                            BorderThickness="1">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="#FF3B30"/>
-                            <TextBlock x:Name="StatusLabel" Text="DISCONNECTED" FontSize="10" FontWeight="Bold" Foreground="#1D1D1F"/>
+                            <TextBlock x:Name="StatusLabel" Text="DISCONNECTED" 
+                                       FontSize="10" FontWeight="Bold" 
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -40,25 +53,30 @@
 
             <Grid Grid.Row="1" Margin="0,24,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Button x:Name="CamPowerBtn" Click="VideoToggleButton_Click" Background="White" BorderBrush="#D2D2D7" Padding="16,8" CornerRadius="8">
+                    <Button x:Name="CamPowerBtn" Click="VideoToggleButton_Click" 
+                            Padding="16,8" CornerRadius="8">
                         <StackPanel Orientation="Horizontal" Spacing="10">
                             <FontIcon x:Name="CamIcon" Glyph="&#xE714;" FontSize="16" Foreground="#FF3B30"/>
-                            <TextBlock x:Name="CamText" Text="Camera OFF" FontWeight="SemiBold" Foreground="#1D1D1F"/>
+                            <TextBlock x:Name="CamText" Text="Camera OFF" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
-                    <Button Click="ScreenshotButton_Click" Background="White" BorderBrush="#D2D2D7" Padding="16,8" CornerRadius="8">
-                        <FontIcon Glyph="&#xE722;" Foreground="#1D1D1F"/>
+                    <Button Click="ScreenshotButton_Click" Padding="16,8" CornerRadius="8">
+                        <FontIcon Glyph="&#xE722;" />
                     </Button>
                 </StackPanel>
 
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
-                    <Button x:Name="BtnYolo" Click="BtnYolo_Click" Background="#007AFF" Foreground="White" Padding="20,10" CornerRadius="8">
+                    <Button x:Name="BtnYolo" Click="BtnYolo_Click" 
+                            Style="{StaticResource AccentButtonStyle}" 
+                            Padding="20,10" CornerRadius="8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xE81E;"/>
                             <TextBlock Text="Detect Objects" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="BtnOcr" Click="BtnOcr_Click" Background="#AF52DE" Foreground="White" Padding="20,10" CornerRadius="8">
+                    <Button x:Name="BtnOcr" Click="BtnOcr_Click" 
+                            Background="#AF52DE" Foreground="White" 
+                            Padding="20,10" CornerRadius="8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon Glyph="&#xEDC6;"/>
                             <TextBlock Text="Read Text" FontWeight="SemiBold"/>
@@ -68,7 +86,10 @@
             </Grid>
         </Grid>
 
-        <Border Grid.Column="1" Background="#FFFFFF" BorderBrush="#D2D2D7" BorderThickness="1,0,0,0">
+        <Border Grid.Column="1" 
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                BorderThickness="1,0,0,0">
             <Grid Padding="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -76,21 +97,27 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Text="TELEMETRY LOG" FontSize="11" FontWeight="Bold" Foreground="#86868B" CharacterSpacing="150" Margin="0,0,0,20"/>
+                <TextBlock Text="TELEMETRY LOG" FontSize="11" FontWeight="Bold" 
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                           CharacterSpacing="150" Margin="0,0,0,20"/>
 
                 <ScrollViewer x:Name="LogScroll" Grid.Row="1">
                     <ItemsControl x:Name="LogList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding}" Foreground="#1D1D1F" FontFamily="Consolas" FontSize="12" Margin="0,4"/>
+                                <TextBlock Text="{Binding}" 
+                                           Foreground="{ThemeResource TextFillColorPrimaryBrush}" 
+                                           FontFamily="Consolas" FontSize="12" Margin="0,4"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
 
                 <StackPanel Grid.Row="2" Margin="0,20,0,0" Spacing="4">
-                    <TextBlock x:Name="AiFeedback" Text="AI Idle" Foreground="#007AFF" FontWeight="Bold"/>
-                    <TextBlock x:Name="ConnDetail" Text="Target: 192.168.4.1" FontSize="10" Foreground="#86868B"/>
+                    <TextBlock x:Name="AiFeedback" Text="AI Idle" 
+                               Foreground="{ThemeResource SystemAccentColor}" FontWeight="Bold"/>
+                    <TextBlock x:Name="ConnDetail" Text="Target: 192.168.4.1" 
+                               FontSize="10" Foreground="{ThemeResource TextFillColorDisabledBrush}"/>
                 </StackPanel>
             </Grid>
         </Border>
