@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.System;
-using Windows.UI; // REQUIRED for Color
+using Windows.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Net.WebSockets;
@@ -15,8 +15,9 @@ using WinUIEx;
 using OpenCvSharp;
 using Tesseract;
 using Microsoft.ML.OnnxRuntime;
+using System.Net.Http;
 
-// FIXED: Resolves ambiguity between OpenCvSharp.Window and Microsoft.UI.Xaml.Window
+// Resolves ambiguity between OpenCvSharp.Window and Microsoft.UI.Xaml.Window
 using Window = Microsoft.UI.Xaml.Window;
 
 namespace yolo_venicle
@@ -24,13 +25,12 @@ namespace yolo_venicle
     public sealed partial class MainWindow : Window
     {
         private ClientWebSocket? _webSocket;
-        private ObservableCollection<string> _logs = new ObservableCollection<string>();
-        private DispatcherTimer _reconnectTimer = new DispatcherTimer();
-        private DispatcherTimer _videoTickTimer = new DispatcherTimer();
-
+        private readonly ObservableCollection<string> _logs = new ObservableCollection<string>();
+        private readonly DispatcherTimer _reconnectTimer = new DispatcherTimer();
+        private readonly DispatcherTimer _videoTickTimer = new DispatcherTimer();
         private bool _isCamOn = false;
         private string _activeKey = "";
-        private bool _isAiProcessing = false; // Now used to prevent overlapping tasks
+        private bool _isAiProcessing = false;
 
         private TesseractEngine? _ocr;
         private InferenceSession? _yolo;
@@ -41,14 +41,24 @@ namespace yolo_venicle
         public MainWindow()
         {
             this.InitializeComponent();
+
+            // WinUIEx Helpers
             this.SetWindowSize(1350, 850);
             this.CenterOnScreen();
+
+            this.SystemBackdrop = new MicaBackdrop();
+
+            // Set the theme to follow the system
+            if (this.Content is FrameworkElement rootElement)
+            {
+                rootElement.RequestedTheme = ElementTheme.Default;
+            }
 
             InitializeAI();
             LogList.ItemsSource = _logs;
 
             _reconnectTimer.Interval = TimeSpan.FromSeconds(3);
-            _reconnectTimer.Tick += (s, e) => EnsureConnected();
+            _reconnectTimer.Tick += (s, e) => { _ = EnsureConnected(); };
             _reconnectTimer.Start();
 
             _videoTickTimer.Interval = TimeSpan.FromMilliseconds(200);
@@ -58,7 +68,7 @@ namespace yolo_venicle
             RootGrid.KeyUp += OnKeyUp;
             this.Activated += (s, e) => RootGrid.Focus(FocusState.Programmatic);
 
-            AddLog("System: Nucleus Online (Light Mode)");
+            AddLog("System: Nucleus Online (Theme: System-Aware)");
         }
 
         private void InitializeAI()
@@ -69,7 +79,10 @@ namespace yolo_venicle
                 _yolo = new InferenceSession("yolov8n.onnx");
                 AddLog("AI: Neural Engines Synced");
             }
-            catch { AddLog("AI: Assets missing"); }
+            catch (Exception ex)
+            {
+                AddLog($"AI: Initialization failed - {ex.Message}");
+            }
         }
 
         private void RefreshFeed()
@@ -81,7 +94,7 @@ namespace yolo_venicle
                 bmp.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 VehicleFeedImage.Source = bmp;
             }
-            catch { }
+            catch { /* Ignore transient network errors */ }
         }
 
         private void ToggleVideo(bool start)
@@ -92,7 +105,7 @@ namespace yolo_venicle
                 _videoTickTimer.Start();
                 VehicleFeedImage.Opacity = 1;
                 OfflineOverlay.Visibility = Visibility.Collapsed;
-                CamIcon.Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 52, 199, 89));
+                CamIcon.Foreground = new SolidColorBrush(Colors.Green);
                 CamText.Text = "Camera ON";
                 AddLog("Stream: Activated");
             }
@@ -102,7 +115,7 @@ namespace yolo_venicle
                 VehicleFeedImage.Source = null;
                 VehicleFeedImage.Opacity = 0;
                 OfflineOverlay.Visibility = Visibility.Visible;
-                CamIcon.Foreground = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 59, 48));
+                CamIcon.Foreground = new SolidColorBrush(Colors.Red);
                 CamText.Text = "Camera OFF";
                 AddLog("Stream: Deactivated");
             }
@@ -110,12 +123,15 @@ namespace yolo_venicle
 
         private async void BtnYolo_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isCamOn || _isAiProcessing) return; // FIX: Variable is now used
+            if (!_isCamOn || _isAiProcessing || _yolo == null) return;
             _isAiProcessing = true;
             AiFeedback.Text = "Scanning Objects...";
 
-            await Task.Run(async () => {
-                await Task.Delay(400); // Simulate heavy YOLO work
+            await Task.Run(() => {
+                // Background processing logic would go here
+                Task.Delay(400).Wait();
+
+                // Use DispatcherQueue for thread-safe UI updates
                 this.DispatcherQueue.TryEnqueue(() => AddLog("AI: Environment Scan Complete"));
             });
 
@@ -125,20 +141,25 @@ namespace yolo_venicle
 
         private async void BtnOcr_Click(object sender, RoutedEventArgs e)
         {
-            if (!_isCamOn || _isAiProcessing) return; // FIX: Variable is now used
+            if (!_isCamOn || _isAiProcessing || _ocr == null) return;
             _isAiProcessing = true;
             AiFeedback.Text = "Reading Text...";
             try
             {
-                using var client = new System.Net.Http.HttpClient();
+                using var client = new HttpClient();
                 var bytes = await client.GetByteArrayAsync(CurrentImageUrl);
                 using var mat = Mat.FromImageData(bytes);
                 using var gray = mat.CvtColor(ColorConversionCodes.BGR2GRAY);
                 using var img = Pix.LoadFromMemory(gray.ToBytes(".png"));
-                using var page = _ocr?.Process(img);
-                AddLog($"AI Read: {page?.GetText().Trim()}");
+
+                using var page = _ocr.Process(img);
+                string text = page.GetText().Trim();
+                AddLog($"AI Read: {text}");
             }
-            catch { AddLog("AI: OCR Fault"); }
+            catch
+            {
+                AddLog("AI: OCR Fault");
+            }
             finally
             {
                 _isAiProcessing = false;
@@ -146,7 +167,7 @@ namespace yolo_venicle
             }
         }
 
-        private async void EnsureConnected()
+        private async Task EnsureConnected()
         {
             if (_webSocket?.State == WebSocketState.Open) return;
             try
@@ -156,12 +177,12 @@ namespace yolo_venicle
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
                 await _webSocket.ConnectAsync(new Uri(VEHICLE_WS_URI), cts.Token);
                 StatusLabel.Text = "CONNECTED";
-                StatusDot.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 122, 255));
+                StatusDot.Fill = new SolidColorBrush(Colors.DodgerBlue);
             }
             catch
             {
                 StatusLabel.Text = "DISCONNECTED";
-                StatusDot.Fill = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 59, 48));
+                StatusDot.Fill = new SolidColorBrush(Colors.Red);
             }
         }
 
@@ -174,24 +195,46 @@ namespace yolo_venicle
                 await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
                 if (cmd != "stop") AddLog($"> {cmd}");
             }
-            catch { }
+            catch { /* Ignore socket send failures */ }
         }
 
         private void OnKeyDown(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key == VirtualKey.Tab) { e.Handled = true; ToggleVideo(!_isCamOn); return; }
+            if (e.Key == VirtualKey.Tab)
+            {
+                e.Handled = true;
+                ToggleVideo(!_isCamOn);
+                return;
+            }
+
             string key = e.Key.ToString().ToUpper();
             if (_activeKey == key) return;
-            string cmd = key switch { "W" => "napred", "A" => "levo", "S" => "nazad", "D" => "desno",
+
+            string cmd = key switch
+            {
+                "W" => "napred",
+                "A" => "levo",
+                "S" => "nazad",
+                "D" => "desno",
                 "Q" => "levo_rot",
                 "E" => "desno_rot",
-                _ => "" };
-            if (cmd != "") { _activeKey = key; SendCommand(cmd); }
+                _ => ""
+            };
+
+            if (cmd != "")
+            {
+                _activeKey = key;
+                SendCommand(cmd);
+            }
         }
 
         private void OnKeyUp(object sender, KeyRoutedEventArgs e)
         {
-            if (e.Key.ToString().ToUpper() == _activeKey) { _activeKey = ""; SendCommand("stop"); }
+            if (e.Key.ToString().ToUpper() == _activeKey)
+            {
+                _activeKey = "";
+                SendCommand("stop");
+            }
         }
 
         private void AddLog(string msg)
