@@ -1,4 +1,4 @@
-Name: Build, Sign, and Release WinUI 3
+name: Build, Sign, and Release WinUI 3
 
 on:
   workflow_dispatch:
