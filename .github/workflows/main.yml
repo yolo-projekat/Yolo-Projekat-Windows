@@ -1,10 +1,10 @@
-name: Build, Sign, and Release WinUI 3
+Name: Build, Sign, and Release WinUI 3
 
 on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*' 
+      - "v*"
 
 jobs:
   build:
@@ -19,93 +19,143 @@ jobs:
       Project_Path: "yolo venicle/yolo venicle.csproj"
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: 8.0.x
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Cache NuGet Packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.nuget/packages
-        key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.config') }}
-        restore-keys: |
-          ${{ runner.os }}-nuget-
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
-    - name: Decode Certificate
-      shell: powershell
-      run: |
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_Pfx }}")
-        $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
-        [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
+      - name: Decode Certificate
+        shell: powershell
+        run: |
+          $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_Pfx }}")
+          $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
+          [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
 
-    - name: Clean Build Folders
-      shell: powershell
-      run: |
-        & msbuild "$env:Solution_Path" /t:Clean /p:Configuration=$env:Configuration /p:Platform=$env:Platform
+      - name: Clean Build Folders
+        shell: powershell
+        run: |
+          & msbuild "$env:Solution_Path" /t:Clean /p:Configuration=$env:Configuration /p:Platform=$env:Platform
 
-    - name: Restore NuGet Packages
-      shell: powershell
-      run: |
-        & msbuild "$env:Solution_Path" /t:Restore `
-          /p:Configuration=$env:Configuration `
-          /p:RuntimeIdentifier=win-$env:Platform `
-          /p:PublishReadyToRun=false
+      - name: Restore NuGet Packages
+        shell: powershell
+        run: |
+          & msbuild "$env:Solution_Path" /t:Restore `
+            /p:Configuration=$env:Configuration `
+            /p:RuntimeIdentifier=win-$env:Platform `
+            /p:PublishReadyToRun=false
 
-    - name: Build and Package
-      shell: powershell
-      run: |
-        & msbuild "$env:Project_Path" `
-          /p:Configuration=$env:Configuration `
-          /p:Platform=$env:Platform `
-          /p:PublishReadyToRun=false `
-          /p:UapAppxPackageBuildMode=SideloadOnly `
-          /p:GenerateAppxPackageOnBuild=true `
-          /p:AppxPackageSigningEnabled=true `
-          /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
-          /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
+      # 1. BUILD THE MSIX PACKAGE
+      - name: Build and Package (MSIX)
+        shell: powershell
+        run: |
+          & msbuild "$env:Project_Path" `
+            /p:Configuration=$env:Configuration `
+            /p:Platform=$env:Platform `
+            /p:PublishReadyToRun=false `
+            /p:UapAppxPackageBuildMode=SideloadOnly `
+            /p:GenerateAppxPackageOnBuild=true `
+            /p:AppxPackageSigningEnabled=true `
+            /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
+            /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
-    - name: Prepare Release Assets
-      shell: powershell
-      run: |
-        $tag = "${{ github.ref_name }}"
-        # Create a clean staging directory
-        if (Test-Path "release_assets") { Remove-Item -Recurse -Force "release_assets" }
-        New-Item -ItemType Directory -Path "release_assets"
-        
-        # 1. Find the main MSIX and rename it with the version tag
-        $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "yolo venicle*.msix" -Recurse | Select-Object -First 1
-        if ($mainPackage) {
-            Copy-Item $mainPackage.FullName "release_assets/yolo-venicle-$tag.msix"
-            Write-Host "Prepared main package: yolo-venicle-$tag.msix"
-        }
-        
-        # 2. Find the runtime dependency (taking only the FIRST one found to avoid duplicates)
-        $runtime = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "Microsoft.WindowsAppRuntime.1.8.msix" -Recurse | Select-Object -First 1
-        if ($runtime) {
-            Copy-Item $runtime.FullName "release_assets/Microsoft.WindowsAppRuntime.1.8.msix"
-            Write-Host "Prepared runtime dependency."
-        }
+      # 2. BUILD THE PORTABLE EXE
+      - name: Publish Portable EXE
+        shell: powershell
+        run: |
+          dotnet publish "$env:Project_Path" `
+            -c $env:Configuration `
+            -r win-$env:Platform `
+            -p:PublishSingleFile=true `
+            -p:SelfContained=true `
+            -p:WindowsPackageType=None `
+            -o "./publish_exe"
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: Release ${{ github.ref_name }}
-        draft: false
-        prerelease: false
-        generate_release_notes: true
-        files: release_assets/*
-        # NEW: If you re-run a build for the same tag, this prevents the "Already Exists" error
-        make_latest: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # 3. SIGN THE PORTABLE EXE
+      - name: Sign Portable EXE
+        shell: powershell
+        run: |
+          $pfxPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
+          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "publish_exe/yolo venicle.exe"
+
+      # 4. COMPILE THE INSTALLER
+      - name: Compile Installer (EXE)
+        uses: a7ul/inplace-iscc-action@v2
+        with:
+          filepath: installer.iss
+          options: "/DAppVersion=${{ github.ref_name }}"
+
+      # 5. SIGN THE INSTALLER
+      - name: Sign Installer EXE
+        shell: powershell
+        run: |
+          $pfxPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
+          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "installer_output/yolo-venicle-installer.exe"
+
+      # 6. ORGANIZE ASSETS
+      - name: Prepare Release Assets
+        shell: powershell
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (Test-Path "release_assets") { Remove-Item -Recurse -Force "release_assets" }
+          New-Item -ItemType Directory -Path "release_assets"
+
+          # MSIX
+          $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "yolo venicle*.msix" -Recurse | Select-Object -First 1
+          if ($mainPackage) { Copy-Item $mainPackage.FullName "release_assets/yolo-venicle-$tag.msix" }
+
+          # Portable EXE
+          if (Test-Path "publish_exe/yolo venicle.exe") {
+              Copy-Item "publish_exe/yolo venicle.exe" "release_assets/yolo-venicle-portable-$tag.exe"
+          }
+
+          # Setup Installer
+          if (Test-Path "installer_output/yolo-venicle-installer.exe") {
+              Copy-Item "installer_output/yolo-venicle-installer.exe" "release_assets/yolo-venicle-setup-$tag.exe"
+          }
+
+          # Runtime
+          $runtime = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "Microsoft.WindowsAppRuntime*.msix" -Recurse | Select-Object -First 1
+          if ($runtime) { Copy-Item $runtime.FullName "release_assets/Microsoft.WindowsAppRuntime.msix" }
+
+      # 7. GENERATE CHECKSUMS
+      - name: Generate Checksums
+        shell: powershell
+        run: |
+          Set-Location "release_assets"
+          Get-ChildItem -File | ForEach-Object {
+              $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+              "$hash  $($_.Name)" | Out-File -FilePath "checksums.txt" -Append -Encoding ascii
+          }
+
+      # 8. PUBLISH RELEASE
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release_assets/*
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
