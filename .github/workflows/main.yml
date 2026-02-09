@@ -47,9 +47,10 @@ jobs:
           & msbuild "$env:Solution_Path" /t:Restore `
             /p:Configuration=$env:Configuration `
             /p:RuntimeIdentifier=win-$env:Platform `
-            /p:PublishReadyToRun=false
+            /p:RestoreUseStaticGraphEvaluation=false
 
-      # 1. BUILD THE MSIX PACKAGE (Overriding WindowsPackageType for the installer)
+      # 1. BUILD THE MSIX PACKAGE
+      # Overriding WindowsPackageType is crucial to bypass the .csproj 'None' setting
       - name: Build and Package (MSIX)
         shell: powershell
         run: |
@@ -64,7 +65,7 @@ jobs:
             /p:PackageCertificateKeyFile="$env:CERT_PATH" `
             /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
-      # 2. BUILD THE PORTABLE EXE (Self-Contained)
+      # 2. BUILD THE PORTABLE EXE
       - name: Publish Portable EXE
         shell: powershell
         run: |
@@ -104,21 +105,21 @@ jobs:
           if (Test-Path "release_assets") { Remove-Item -Recurse -Force "release_assets" }
           New-Item -ItemType Directory -Path "release_assets"
 
-          # MSIX
-          $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "yolo venicle*.msix" -Recurse | Select-Object -First 1
+          # Copy MSIX
+          $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "*.msix" -Recurse | Select-Object -First 1
           if ($mainPackage) { Copy-Item $mainPackage.FullName "release_assets/yolo-venicle-$tag.msix" }
 
-          # Portable EXE (Renaming to 'portable')
+          # Copy Portable
           if (Test-Path "publish_exe/yolo venicle.exe") {
               Copy-Item "publish_exe/yolo venicle.exe" "release_assets/yolo-venicle-portable-$tag.exe"
           }
 
-          # Setup Installer
+          # Copy Setup
           if (Test-Path "output/yolo-venicle-setup.exe") {
               Copy-Item "output/yolo-venicle-setup.exe" "release_assets/yolo-venicle-setup-$tag.exe"
           }
 
-          # Runtime Dependency
+          # Copy Runtime
           $runtime = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "Microsoft.WindowsAppRuntime*.msix" -Recurse | Select-Object -First 1
           if ($runtime) { Copy-Item $runtime.FullName "release_assets/Microsoft.WindowsAppRuntime.msix" }
 
