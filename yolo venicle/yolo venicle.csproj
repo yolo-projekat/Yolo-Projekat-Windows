@@ -39,12 +39,20 @@
         <PackageReference Include="CommunityToolkit.WinUI.Extensions" Version="8.2.251219" />
         <PackageReference Include="CommunityToolkit.WinUI.Helpers" Version="8.2.251219" />
         <PackageReference Include="FFmpegInteropX.FFmpegUWP" Version="5.1.100" />
-        <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
+        <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" GeneratePathProperty="true" />
         <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7463" />
         <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260101001" />
         <PackageReference Include="OpenCvSharp4.Windows" Version="4.11.0.20250507" />
         <PackageReference Include="Tesseract" Version="5.2.0" />
         <PackageReference Include="WinUIEx" Version="2.9.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <None Include="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\win-x64\native\*.dll">
+            <Link>%(FileName)%(Extension)</Link>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
