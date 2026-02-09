@@ -33,11 +33,13 @@ jobs:
         uses: microsoft/setup-msbuild@v2
 
       - name: Decode Certificate
+        id: decode_cert
         shell: powershell
         run: |
           $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_Pfx }}")
           $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
           [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
+          echo "CERT_PATH=$certificatePath" >> $env:GITHUB_ENV
 
       - name: Restore NuGet Packages
         shell: powershell
@@ -47,7 +49,7 @@ jobs:
             /p:RuntimeIdentifier=win-$env:Platform `
             /p:PublishReadyToRun=false
 
-      # 1. BUILD THE MSIX PACKAGE
+      # 1. BUILD THE MSIX PACKAGE (Overriding WindowsPackageType for the installer)
       - name: Build and Package (MSIX)
         shell: powershell
         run: |
@@ -58,10 +60,11 @@ jobs:
             /p:UapAppxPackageBuildMode=SideloadOnly `
             /p:GenerateAppxPackageOnBuild=true `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateKeyFile="../GitHubActionsWorkflow.pfx" `
+            /p:WindowsPackageType=MSIX `
+            /p:PackageCertificateKeyFile="$env:CERT_PATH" `
             /p:PackageCertificatePassword="${{ secrets.Pfx_Password }}"
 
-      # 2. BUILD THE PORTABLE EXE
+      # 2. BUILD THE PORTABLE EXE (Self-Contained)
       - name: Publish Portable EXE
         shell: powershell
         run: |
@@ -77,11 +80,10 @@ jobs:
       - name: Sign Portable EXE
         shell: powershell
         run: |
-          $pfxPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
-          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "publish_exe/yolo venicle.exe"
+          & $signtool.FullName sign /f "$env:CERT_PATH" /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "publish_exe/yolo venicle.exe"
 
-      # 4. COMPILE THE INSTALLER (Using native ISCC)
+      # 4. COMPILE THE INSTALLER
       - name: Compile Installer (EXE)
         shell: powershell
         run: |
@@ -91,9 +93,8 @@ jobs:
       - name: Sign Installer EXE
         shell: powershell
         run: |
-          $pfxPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
-          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "output/yolo-venicle-setup.exe"
+          & $signtool.FullName sign /f "$env:CERT_PATH" /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "output/yolo-venicle-setup.exe"
 
       # 6. ORGANIZE ASSETS
       - name: Prepare Release Assets
@@ -107,7 +108,7 @@ jobs:
           $mainPackage = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "yolo venicle*.msix" -Recurse | Select-Object -First 1
           if ($mainPackage) { Copy-Item $mainPackage.FullName "release_assets/yolo-venicle-$tag.msix" }
 
-          # Portable EXE
+          # Portable EXE (Renaming to 'portable')
           if (Test-Path "publish_exe/yolo venicle.exe") {
               Copy-Item "publish_exe/yolo venicle.exe" "release_assets/yolo-venicle-portable-$tag.exe"
           }
