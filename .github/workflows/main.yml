@@ -29,14 +29,6 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Cache NuGet Packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/packages.config') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget-
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
@@ -46,11 +38,6 @@ jobs:
           $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.BASE64_ENCODED_Pfx }}")
           $certificatePath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
           [IO.File]::WriteAllBytes($certificatePath, $pfx_cert_byte)
-
-      - name: Clean Build Folders
-        shell: powershell
-        run: |
-          & msbuild "$env:Solution_Path" /t:Clean /p:Configuration=$env:Configuration /p:Platform=$env:Platform
 
       - name: Restore NuGet Packages
         shell: powershell
@@ -94,12 +81,11 @@ jobs:
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
           & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "publish_exe/yolo venicle.exe"
 
-      # 4. COMPILE THE INSTALLER
+      # 4. COMPILE THE INSTALLER (Using native ISCC)
       - name: Compile Installer (EXE)
-        uses: a7ul/inplace-iscc-action@v2
-        with:
-          filepath: installer.iss
-          options: "/DAppVersion=${{ github.ref_name }}"
+        shell: powershell
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion="${{ github.ref_name }}" installer.iss
 
       # 5. SIGN THE INSTALLER
       - name: Sign Installer EXE
@@ -107,7 +93,7 @@ jobs:
         run: |
           $pfxPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "GitHubActionsWorkflow.pfx"
           $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" -Filter signtool.exe -Recurse | Select-Object -First 1
-          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "installer_output/yolo-venicle-installer.exe"
+          & $signtool.FullName sign /f $pfxPath /p "${{ secrets.Pfx_Password }}" /td sha256 /fd sha256 "output/yolo-venicle-setup.exe"
 
       # 6. ORGANIZE ASSETS
       - name: Prepare Release Assets
@@ -127,11 +113,11 @@ jobs:
           }
 
           # Setup Installer
-          if (Test-Path "installer_output/yolo-venicle-installer.exe") {
-              Copy-Item "installer_output/yolo-venicle-installer.exe" "release_assets/yolo-venicle-setup-$tag.exe"
+          if (Test-Path "output/yolo-venicle-setup.exe") {
+              Copy-Item "output/yolo-venicle-setup.exe" "release_assets/yolo-venicle-setup-$tag.exe"
           }
 
-          # Runtime
+          # Runtime Dependency
           $runtime = Get-ChildItem -Path "yolo venicle/AppPackages" -Filter "Microsoft.WindowsAppRuntime*.msix" -Recurse | Select-Object -First 1
           if ($runtime) { Copy-Item $runtime.FullName "release_assets/Microsoft.WindowsAppRuntime.msix" }
 
