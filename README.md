@@ -1,75 +1,64 @@
 <div align="center">
 
-# 🖥️ YOLO Projekat Windows
-### *Centralni Komandni Panel za Autonomnu Sistemsku Kontrolu*
+# 🗄️ [ARHIVIRANO] YOLO Projekat Windows
+### *Istorijski WinUI 3 Komandni Panel*
 
-[![WinUI 3](https://img.shields.io/badge/Framework-WinUI_3-38bdf8?style=for-the-badge&logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
-[![ONNX Runtime](https://img.shields.io/badge/AI-ONNX_Runtime-075985?style=for-the-badge&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
-[![C#](https://img.shields.io/badge/Language-C%23-38bdf8?style=for-the-badge&logo=csharp&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/csharp/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-94a3b8?style=for-the-badge)](https://opensource.org/licenses/MIT)
+> [!WARNING]  
+> **STATUS REPOZITORIJUMA: ARHIVIRAN (DEPRECATED)**
+> 
+> Ovaj repozitorijum sadrži prvobitnu **WinUI 3** verziju Windows klijenta za YOLO Projekat i više se ne održava. Kompletan klijent se trenutno razvija *od nule* (from scratch) koristeći **Windows Presentation Foundation (WPF)** u novom, odvojenom repozitorijumu.
+>
+> **Inženjersko objašnjenje tranzicije:** Iako WinUI 3 (Windows App SDK) nudi najmoderniji Fluent Design, njegov sistem distribucije (MSIX paketi, neophodni developerski sertifikati, kompleksan *sideloading*) pokazao se previše restriktivnim i nepraktičnim za brzo testiranje i edukativnu primenu. 
+> 
+> **Trade-offs (Kompromisi):** Odbacili smo nativne Windows 11 API-jeve i izvorni Mica materijal u korist **apsolutne prenosivosti i stabilnosti**. Nova WPF implementacija će omogućiti *Single-File Deployment* (čist `.exe` fajl bez potrebe za instalacijom, $O(1)$ kompleksnost pokretanja) uz zadržavanje punih performansi C# logike i hardverske akceleracije za AI inferencu.
+
+[![WinUI 3](https://img.shields.io/badge/Framework-WinUI_3-gray?style=for-the-badge&logo=windows&logoColor=white)](https://learn.microsoft.com/en-us/windows/apps/winui/winui3/)
+[![ONNX Runtime](https://img.shields.io/badge/AI-ONNX_Runtime-gray?style=for-the-badge&logo=onnx&logoColor=white)](https://onnxruntime.ai/)
+[![C#](https://img.shields.io/badge/Language-C%23-gray?style=for-the-badge&logo=csharp&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/csharp/)
 
 ---
 
 <p align="center">
-  <b>YOLO Vozilo Windows</b> je profesionalni desktop klijent projektovan za maksimalnu stabilnost i preciznost. 
-  <br>Koristeći <b>WinUI 3</b>, aplikacija donosi besprekorno Windows 11 iskustvo uz integraciju moćnih AI engine-ova direktno na klijentskoj strani.
+  <i>Istorijska arhiva: Originalni kod za WinUI 3 aplikaciju koja je služila kao prvi grafički interfejs za kontrolu YOLO vozila.</i>
 </p>
-
-
 
 </div>
 
-## 🚀 Ključne Komponente
+## 🧩 Originalna WinUI 3 Arhitektura (Istorija)
 
-### 📺 Video & AI Inteligentni Sistem
-* **High-Speed Video Feed:** Optimizovan striming uz vizuelni "Offline Overlay" i automatsku dijagnostiku frejmova.
-* **YOLOv8 ONNX Engine:** Lokalna inferencija putem `Microsoft.ML.OnnxRuntime` za trenutnu detekciju objekata bez eksternih API poziva.
-* **OpenCV Pre-Processing:** Napredna obrada slike pomoću `OpenCvSharp` (grayscale, filtriranje šuma) radi maksimizovanja OCR preciznosti.
-* **Tesseract OCR:** Inteligentno očitavanje tekstualnih komandi i registarskih oznaka direktno sa video izvora.
+Ovaj projekat je prvobitno koristio najnoviji Microsoft UI framework, fokusirajući se na modernu estetiku, ali uz cenu teškog održavanja i distribucije:
 
-### 🎮 Precizna Kontrola i Telemetrija
-* **Precision Keyboard Drive:** Optimizovan **WASD** sistem sa ugrađenom logikom za debouncing (sprečavanje zagušenja komandi).
-* **Real-time Telemetry Log:** Dinamički panel koji beleži mrežnu latenciju, status AI skeniranja i zdravlje sistema.
-* **Smart Reconnect:** Autonomni sistem za oporavak veze koji održava stabilan WebSocket kanal u svim uslovima.
+* **High-Speed Video Feed:** Optimizovan HTTP striming sa integrisanim "Offline Overlay" statusom.
+* **YOLOv8 ONNX Engine:** Lokalna `Microsoft.ML.OnnxRuntime` inferencija za detekciju objekata.
+* **Tesseract OCR & OpenCV:** Sistemi za obradu slike i prepoznavanje teksta na klijentskoj strani.
+* **Asinhrona Telemetrija:** WebSocket komunikacija za niske latencije pri upravljanju (WASD).
 
 ---
 
-## 🛠 Tehnološki Stack
+## 🛠 Stari Tehnološki Stack
 
-| Segment | Tehnologija | Uloga |
+| Komponenta | Tehnologija | Uloga u ovoj verziji (Sada napušteno) |
 | :--- | :--- | :--- |
-| **UI Framework** | WinUI 3 (Fluent Design) | Moderni Windows App SDK |
-| **AI Inference** | ONNX Runtime | YOLOv8 Model Execution |
-| **Computer Vision** | OpenCvSharp 4 | Image Filtering & Analysis |
-| **OCR Engine** | Tesseract.NET | Text Recognition |
-| **Networking** | WebSockets (Async) | Low-Latency Command Channel |
-| **Shell Integration** | WinUIEx | Napredno upravljanje prozorima |
+| **UI Framework** | **WinUI 3 (Fluent Design)** | Moderni Windows 11 interfejs (Zamenjeno sa WPF) |
+| **AI Inference** | **ONNX Runtime** | Izvršavanje YOLOv8 modela |
+| **Computer Vision** | **OpenCvSharp 4** | Pre-processing frejmova za OCR |
+| **OCR Engine** | **Tesseract.NET** | Očitavanje teksta sa kamere |
+| **Networking** | **WebSockets** | Kontrolni kanal za Raspberry Pi 5 |
+| **Shell Integration**| **WinUIEx** | Modifikacije prozora i naslovne trake |
 
 ---
 
-## 🔧 Konfiguracija i Upravljanje
+## 🔧 Istorijska Konfiguracija
 
-Klijent se povezuje na jezgro sistema (Raspberry Pi 5) putem sledećih protokola:
+Sistem se povezivao na glavnu procesorsku jedinicu (Raspberry Pi 5) koristeći statičke mrežne rute:
 
-> [!TIP]
-> Za najbolje performanse AI analize, preporučuje se korišćenje računara sa namenskom grafičkom karticom (GPU) radi ubrzanja ONNX Runtime-a.
-
-* **WebSocket (Telemetrija):** `ws://192.168.4.1:1606`
+* **WebSocket (Telemetrija i Kontrola):** `ws://192.168.4.1:1606`
 * **HTTP (Video Stream):** `http://192.168.4.1:1607/capture`
 
-### ⌨️ Prečice Kontrolera
-- **WASD:** Kretanje vozila (Automatska `stop` komanda na otpuštanje tastera).
-- **TAB:** Toggle video strima.
-- **Y / O:** Ručno pokretanje YOLO detekcije ili OCR skeniranja.
-
----
-
-## 🎨 Vizuelni Identitet
-
-Aplikacija prati **Fluent Design** standarde, usklađene sa web portalom:
-* **Accent Color:** `#38bdf8` (Electric Blue) za statusne indikatore.
-* **UI Style:** Mica/Acrylic efekti (Glassmorphism) na bočnim panelima.
-* **Feedback:** Dinamički kolor-kodirani log (Plava: Info, Zelena: AI Success, Crvena: Error).
+### ⌨️ Kontrole (Legacy)
+- **WASD:** Kretanje vozila uz ugrađen debouncing softverski mehanizam.
+- **TAB:** Prebacivanje prikaza video strima.
+- **Y / O:** Manuelno aktiviranje YOLO detekcije ili OCR skeniranja.
 
 ---
 
